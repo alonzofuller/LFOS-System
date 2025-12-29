@@ -1,14 +1,26 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize outside to allow for reuse, but handle missing key gracefully
+let openai: OpenAI | null = null;
+
+const getOpenAI = () => {
+    if (openai) return openai;
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+        throw new Error('Missing OPENAI_API_KEY environment variable');
+    }
+
+    openai = new OpenAI({ apiKey });
+    return openai;
+};
 
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
     try {
+        const openai = getOpenAI();
         const { messages, context } = await req.json();
 
         // Create a system prompt that injects the firm's data
@@ -39,6 +51,7 @@ export async function POST(req: Request) {
         return NextResponse.json(response.choices[0].message);
     } catch (error) {
         console.error('OpenAI API Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
