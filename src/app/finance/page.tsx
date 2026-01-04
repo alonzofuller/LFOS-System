@@ -17,7 +17,7 @@ const DEPOSIT_CATEGORIES = [
 ] as const;
 
 export default function FinancePage() {
-    const { financials, updateFinancials, employees, cashboxTransactions, addCashTransaction, addCustomExpense, deleteCustomExpense } = useFirmData();
+    const { financials, updateFinancials, employees, cashboxTransactions, addCashTransaction, addCustomExpense, deleteCustomExpense, dailyBurnMetrics } = useFirmData();
     const [editing, setEditing] = useState(false);
     const [showCashboxModal, setShowCashboxModal] = useState(false);
     const [newExpenseName, setNewExpenseName] = useState("");
@@ -71,10 +71,9 @@ export default function FinancePage() {
         Number(formData.otherMonthlyExpenses) +
         customExpenseTotal;
 
-    const totalMonthlyStaffHours = totalDailyStaffHours * 20;
-    const hourlyOverhead = totalMonthlyStaffHours > 0 ? monthlyTotal / totalMonthlyStaffHours : monthlyTotal / 160;
-    const totalHourlyBurn = totalHourlyStaffCost + hourlyOverhead;
-    const dailyBurn = totalHourlyBurn * (totalDailyStaffHours || 8);
+    const { total_daily_burn, hourly_burn_rate } = dailyBurnMetrics;
+    const dailyBurn = total_daily_burn;
+    const totalHourlyBurn = hourly_burn_rate || 0;
 
     const handleSave = () => {
         updateFinancials({
@@ -284,9 +283,9 @@ export default function FinancePage() {
                     <CardContent>
                         <Table>
                             <TableBody>
-                                <TableRow><TableCell className="font-medium">Total Staff Cost (Hourly)</TableCell><TableCell className="text-right">${totalHourlyStaffCost.toFixed(2)}</TableCell></TableRow>
-                                <TableRow><TableCell className="font-medium">Fixed Overhead (Hourly)</TableCell><TableCell className="text-right">${Number(hourlyOverhead).toFixed(2)}</TableCell></TableRow>
-                                <TableRow className="bg-destructive/10 hover:bg-destructive/20 font-bold"><TableCell>Total Hourly Burn</TableCell><TableCell className="text-right text-destructive">${totalHourlyBurn.toFixed(2)}</TableCell></TableRow>
+                                <TableRow><TableCell className="font-medium">Total Staff Payroll (Daily)</TableCell><TableCell className="text-right">${dailyBurnMetrics.daily_payroll.toFixed(2)}</TableCell></TableRow>
+                                <TableRow><TableCell className="font-medium">Fixed Overhead (Daily)</TableCell><TableCell className="text-right">${dailyBurnMetrics.daily_fixed_overhead.toFixed(2)}</TableCell></TableRow>
+                                <TableRow className="bg-destructive/10 hover:bg-destructive/20 font-bold"><TableCell>Total Daily Burn</TableCell><TableCell className="text-right text-destructive">${total_daily_burn.toFixed(2)}</TableCell></TableRow>
                             </TableBody>
                         </Table>
                         <div className="mt-6 space-y-2">

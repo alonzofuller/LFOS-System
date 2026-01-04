@@ -53,6 +53,14 @@ interface FirmContextType {
     addCaseType: (caseType: Omit<CaseType, 'id'>) => void;
     updateCaseType: (id: string, updates: Partial<CaseType>) => void;
     deleteCaseType: (id: string) => void;
+    // Burn Metrics
+    dailyBurnMetrics: {
+        total_daily_burn: number;
+        daily_payroll: number;
+        daily_fixed_overhead: number;
+        total_daily_hours: number;
+        hourly_burn_rate: number | null;
+    };
 }
 
 const FirmContext = createContext<FirmContextType | undefined>(undefined);
@@ -112,6 +120,28 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
     // Use actual total staff hours per month (sum of each employee's daily hours * 20 workdays)
     const totalMonthlyStaffHours = totalDailyStaffHours * 20;
     const hourlyOverhead = totalMonthlyStaffHours > 0 ? monthlyTotal / totalMonthlyStaffHours : monthlyTotal / 160;
+
+    // MERGE: New Total Daily Burn Logic
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayLogs = taskLogs.filter(log => log.date === todayStr);
+
+    const daily_payroll = todayLogs.reduce((acc, log) => acc + (log.laborCost || 0), 0);
+    const total_daily_hours = todayLogs.reduce((acc, log) => acc + (log.hours || 0), 0);
+
+    // Rule: Fixed overhead normalized to daily value (assuming 20 operating days)
+    const operating_days_per_month = 20;
+    const daily_fixed_overhead = monthlyTotal / operating_days_per_month;
+
+    const total_daily_burn = daily_payroll + daily_fixed_overhead;
+    const hourly_burn_rate = total_daily_hours > 0 ? total_daily_burn / total_daily_hours : null;
+
+    const dailyBurnMetrics = {
+        total_daily_burn,
+        daily_payroll,
+        daily_fixed_overhead,
+        total_daily_hours,
+        hourly_burn_rate
+    };
 
     // Merge calculated overhead into the financials object exposed to context
     const exposedFinancials = {
@@ -389,7 +419,8 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                 caseTypes,
                 addCaseType,
                 updateCaseType,
-                deleteCaseType
+                deleteCaseType,
+                dailyBurnMetrics
             }}
         >
             {children}
