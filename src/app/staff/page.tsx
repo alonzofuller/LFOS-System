@@ -12,6 +12,7 @@ import { PlusCircle, Save, Clock, Calculator, X, CheckCircle2, AlertTriangle, Tr
 export default function StaffPage() {
     const { employees, addEmployee, taskLogs, addTaskLog, financials, clients, updateClient } = useFirmData();
     const [newEmployee, setNewEmployee] = useState({ name: "", role: "", hourlyCost: "", salary: "", dailyHours: "8", payType: "hourly" as "hourly" | "salary" });
+    const [isSaving, setIsSaving] = useState(false);
     const [logEntry, setLogEntry] = useState({
         employeeId: "",
         description: "",
@@ -75,7 +76,7 @@ export default function StaffPage() {
     const billableValue = getBillableValue();
     const profitOrLoss = billableValue - productionCost;
 
-    const handleAddEmployee = () => {
+    const handleAddEmployee = async () => {
         if (!newEmployee.name) {
             alert("Please enter a name.");
             return;
@@ -84,17 +85,26 @@ export default function StaffPage() {
             alert("Please enter either an Hourly Cost or a Salary.");
             return;
         }
-        addEmployee({
-            id: Math.random().toString(36).substr(2, 9),
-            name: newEmployee.name,
-            role: newEmployee.role || "Staff",
-            hourlyCost: Number(newEmployee.hourlyCost) || 0,
-            salary: newEmployee.salary ? Number(newEmployee.salary) : undefined,
-            dailyHours: Number(newEmployee.dailyHours) || 8,
-            dailyTarget: (Number(newEmployee.hourlyCost) || (Number(newEmployee.salary) / 2080)) * 3
-        });
-        setNewEmployee({ name: "", role: "", hourlyCost: "", salary: "", dailyHours: "8", payType: "hourly" });
-        alert("Employee added successfully to roster.");
+
+        setIsSaving(true);
+        try {
+            await addEmployee({
+                id: Math.random().toString(36).substr(2, 9),
+                name: newEmployee.name,
+                role: newEmployee.role || "Staff",
+                hourlyCost: Number(newEmployee.hourlyCost) || 0,
+                salary: newEmployee.salary ? Number(newEmployee.salary) : undefined,
+                dailyHours: Number(newEmployee.dailyHours) || 8,
+                dailyTarget: (Number(newEmployee.hourlyCost) || (Number(newEmployee.salary) / 2080)) * 3
+            });
+            setNewEmployee({ name: "", role: "", hourlyCost: "", salary: "", dailyHours: "8", payType: "hourly" });
+            alert("Employee added successfully to roster.");
+        } catch (error) {
+            console.error("Failed to add employee:", error);
+            alert("Error: Failed to save to database. Please check your connection.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleLogTask = () => {
@@ -241,7 +251,9 @@ export default function StaffPage() {
                                         <Input type="number" step="0.5" placeholder="8" value={newEmployee.dailyHours} onChange={(e) => setNewEmployee({ ...newEmployee, dailyHours: e.target.value })} />
                                     </div>
                                     <div className="col-span-2">
-                                        <Button onClick={handleAddEmployee} className="w-full">Add to Roster</Button>
+                                        <Button onClick={handleAddEmployee} className="w-full" disabled={isSaving}>
+                                            {isSaving ? "Saving..." : "Add to Roster"}
+                                        </Button>
                                     </div>
                                 </div>
                             </div>

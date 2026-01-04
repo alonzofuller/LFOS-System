@@ -21,6 +21,7 @@ export default function ClientsPage() {
         estimatedHours: "", // Auto-populated from case type
         monthlyFee: ""
     });
+    const [isSaving, setIsSaving] = useState(false);
 
     // Get selected case type for auto-populating hours
     const selectedCaseType = caseTypes.find(ct => ct.id === newClient.caseTypeId);
@@ -34,7 +35,7 @@ export default function ClientsPage() {
         });
     };
 
-    const handleAddClient = () => {
+    const handleAddClient = async () => {
         if (!newClient.name || !newClient.sponsorName) {
             alert("Please enter at least the Client Name and Sponsor Name.");
             return;
@@ -44,26 +45,34 @@ export default function ClientsPage() {
             return;
         }
 
-        // Get case type name
-        const caseTypeName = selectedCaseType?.name || "General";
+        setIsSaving(true);
+        try {
+            // Get case type name
+            const caseTypeName = selectedCaseType?.name || "General";
 
-        addClient({
-            id: Math.random().toString(36).substr(2, 9),
-            name: newClient.name,
-            sponsorName: newClient.sponsorName,
-            caseType: caseTypeName,
-            status: "active",
-            retainerFee: 0,
-            monthlyFee: Number(newClient.monthlyFee) || 0,
-            lastCommunication: new Date().toISOString(),
-            nextPaymentDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            billingType: newClient.billingType,
-            flatFeeAmount: Number(newClient.flatFeeAmount) || 0,
-            estimatedHours: Number(newClient.estimatedHours) || 0,
-            hoursLogged: 0
-        });
-        setNewClient({ name: "", sponsorName: "", caseTypeId: "", billingType: "flat_fee", flatFeeAmount: "", estimatedHours: "", monthlyFee: "" });
-        alert("New client file created successfully.");
+            await addClient({
+                id: Math.random().toString(36).substr(2, 9),
+                name: newClient.name,
+                sponsorName: newClient.sponsorName,
+                caseType: caseTypeName,
+                status: "active",
+                retainerFee: 0,
+                monthlyFee: Number(newClient.monthlyFee) || 0,
+                lastCommunication: new Date().toISOString(),
+                nextPaymentDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                billingType: newClient.billingType,
+                flatFeeAmount: Number(newClient.flatFeeAmount) || 0,
+                estimatedHours: Number(newClient.estimatedHours) || 0,
+                hoursLogged: 0
+            });
+            setNewClient({ name: "", sponsorName: "", caseTypeId: "", billingType: "flat_fee", flatFeeAmount: "", estimatedHours: "", monthlyFee: "" });
+            alert("New client file created successfully.");
+        } catch (error) {
+            console.error("Failed to add client:", error);
+            alert("Error: Failed to save to database. Please check your connection.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     // Get flat fee cases (for display)
@@ -265,8 +274,8 @@ export default function ClientsPage() {
                                 )}
 
                                 <div className="col-span-2">
-                                    <Button onClick={handleAddClient} className="w-full">
-                                        Create Case File
+                                    <Button onClick={handleAddClient} className="w-full" disabled={isSaving}>
+                                        {isSaving ? "Creating..." : "Create Case File"}
                                     </Button>
                                 </div>
                             </div>

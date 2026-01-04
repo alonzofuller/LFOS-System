@@ -149,43 +149,41 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
 
         const unsubEmployees = onSnapshot(collection(db, "employees"), (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data() })) as Employee[];
-            if (snapshot.docs.length > 0) setEmployees(data);
-        });
+            setEmployees(data);
+        }, (err) => console.error("Employees Stream Error:", err));
 
         const unsubTaskLogs = onSnapshot(collection(db, "taskLogs"), (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data() })) as TaskLog[];
             setTaskLogs(data);
-        });
+        }, (err) => console.error("TaskLogs Stream Error:", err));
 
         const unsubFinancials = onSnapshot(doc(db, "settings", "financials"), (docSnap) => {
             if (docSnap.exists()) {
                 setFinancials(prev => ({ ...prev, ...docSnap.data() }));
             }
-        });
+        }, (err) => console.error("Financials Stream Error:", err));
 
         const unsubClients = onSnapshot(collection(db, "clients"), (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data() })) as Client[];
             setClients(data);
-        });
+        }, (err) => console.error("Clients Stream Error:", err));
 
         const unsubTransactions = onSnapshot(query(collection(db, "transactions"), orderBy("date", "desc")), (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data() })) as CashTransaction[];
             setCashboxTransactions(data);
-        });
+        }, (err) => console.error("Transactions Stream Error:", err));
 
         const unsubTickets = onSnapshot(query(collection(db, "tickets"), orderBy("createdAt", "desc")), (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data() })) as SupportTicket[];
             setTickets(data);
-        });
+        }, (err) => console.error("Tickets Stream Error:", err));
 
         const unsubCaseTypes = onSnapshot(collection(db, "caseTypes"), (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data() })) as CaseType[];
-            if (data.length > 0) {
-                const storedIds = new Set(data.map(ct => ct.id));
-                const newDefaults = DEFAULT_CASE_TYPES.filter(d => !storedIds.has(d.id));
-                setCaseTypes([...data, ...newDefaults]);
-            }
-        });
+            const storedIds = new Set(data.map(ct => ct.id));
+            const newDefaults = DEFAULT_CASE_TYPES.filter(d => !storedIds.has(d.id));
+            setCaseTypes([...data, ...newDefaults]);
+        }, (err) => console.error("CaseTypes Stream Error:", err));
 
         return () => {
             unsubEmployees();
@@ -206,8 +204,16 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
 
     const addEmployee = async (employee: Employee) => {
         if (isConfigured) {
-            await setDoc(doc(db, "employees", employee.id), employee);
+            try {
+                console.log(`[Firestore] Attempting to add employee: ${employee.id}`);
+                await setDoc(doc(db, "employees", employee.id), employee);
+                console.log(`[Firestore] Successfully added employee: ${employee.id}`);
+            } catch (error) {
+                console.error(`[Firestore] Error adding employee ${employee.id}:`, error);
+                throw error;
+            }
         } else {
+            console.log("[Local] Saving employee to local state");
             setEmployees((prev) => [...prev, employee]);
         }
     };
@@ -230,8 +236,16 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
 
     const addClient = async (client: Client) => {
         if (isConfigured) {
-            await setDoc(doc(db, "clients", client.id), client);
+            try {
+                console.log(`[Firestore] Attempting to add client: ${client.id}`);
+                await setDoc(doc(db, "clients", client.id), client);
+                console.log(`[Firestore] Successfully added client: ${client.id}`);
+            } catch (error) {
+                console.error(`[Firestore] Error adding client ${client.id}:`, error);
+                throw error;
+            }
         } else {
+            console.log("[Local] Saving client to local state");
             setClients((prev) => [...prev, client]);
         }
     };
@@ -298,8 +312,16 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
         };
 
         if (isConfigured) {
-            await setDoc(doc(db, "tickets", id), newTicket);
+            try {
+                console.log(`[Firestore] Attempting to add ticket: ${id}`);
+                await setDoc(doc(db, "tickets", id), newTicket);
+                console.log(`[Firestore] Successfully added ticket: ${id}`);
+            } catch (error) {
+                console.error(`[Firestore] Error adding ticket ${id}:`, error);
+                throw error;
+            }
         } else {
+            console.log("[Local] Saving ticket to local state");
             setTickets(prev => [newTicket, ...prev]);
         }
     };
