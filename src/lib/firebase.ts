@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 import { firebaseConfig } from "./firebase-config";
 
 // Detect if config is still using placeholders or is missing
@@ -21,6 +21,8 @@ if (isConfigured) {
 
 // Initialize Firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+    ignoreUndefinedProperties: true
+});
 
 export { app, db, isConfigured };
