@@ -336,16 +336,16 @@ export default function ClientsPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 text-sm">
-                            <div className="p-3 border border-white/10 rounded bg-background/50 text-white">
-                                <span className="font-bold text-white">Rule #1:</span> Every client gets an update every 14 days.
+                            <div className="p-3 border border-white/10 rounded bg-card/50 text-card-foreground">
+                                <span className="font-bold text-primary">Rule #1:</span> Every client gets an update every 14 days.
                             </div>
-                            <div className="p-3 border border-white/10 rounded bg-background/50 text-white">
-                                <span className="font-bold text-white">Rule #2:</span> Sponsors pay the bills. Keep the sponsor informed.
+                            <div className="p-3 border border-white/10 rounded bg-card/50 text-card-foreground">
+                                <span className="font-bold text-primary">Rule #2:</span> Sponsors pay the bills. Keep the sponsor informed.
                             </div>
-                            <div className="p-3 border border-primary/30 rounded bg-primary/5 text-xs text-white">
+                            <div className="p-3 border border-primary/30 rounded bg-primary/10 text-xs text-card-foreground">
                                 <span className="font-bold text-primary">Note:</span> Communication logs are maintained in Clio and LexTrack Manager.
                             </div>
-                            <div className="p-3 border border-purple-500/30 rounded bg-purple-500/5 text-xs text-white">
+                            <div className="p-3 border border-purple-500/30 rounded bg-purple-500/10 text-xs text-card-foreground">
                                 <span className="font-bold text-purple-400">Tip:</span> Manage case type templates in Settings → Case Types.
                             </div>
                         </CardContent>

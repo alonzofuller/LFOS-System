@@ -8,8 +8,9 @@ const getOpenAI = () => {
     if (openai) return openai;
 
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-        throw new Error('Missing OPENAI_API_KEY environment variable');
+    if (!apiKey || apiKey === 'undefined' || apiKey.length < 10) {
+        console.warn('[AI] OPENAI_API_KEY is missing or invalid');
+        return null;
     }
 
     openai = new OpenAI({ apiKey });
@@ -21,7 +22,27 @@ export const runtime = 'edge';
 export async function POST(req: Request) {
     try {
         const openai = getOpenAI();
+
+        if (!openai) {
+            return NextResponse.json(
+                { content: "AI Service is not configured. Please add your OPENAI_API_KEY to the environment variables to activate Firm Intelligence." },
+                { status: 200 } // Return as valid message to handle in UI
+            );
+        }
+
         const { messages, context } = await req.json();
+
+        if (!messages || !Array.isArray(messages)) {
+            return NextResponse.json({ error: 'Invalid messages format' }, { status: 400 });
+        }
+
+        // Clean context for token limits
+        const cleanContext = {
+            employees: context?.employees?.map((e: any) => ({ name: e.name, role: e.role, cost: e.hourlyCost })),
+            financials: context?.financials,
+            clients: context?.clientsSummary,
+            logs: context?.recentLogs
+        };
 
         // Create a system prompt that injects the firm's data
         const systemPrompt = `
@@ -29,7 +50,7 @@ export async function POST(req: Request) {
       Your goal is to provide brutal, honest, and strategic advice to stop financial bleeding and increase production.
       
       Here is the current live data for the firm:
-      ${JSON.stringify(context, null, 2)}
+      ${JSON.stringify(cleanContext, null, 2)}
       
       Instructions:
       1. Be concise, direct, and professional.
@@ -44,7 +65,7 @@ export async function POST(req: Request) {
             stream: false,
             messages: [
                 { role: 'system', content: systemPrompt },
-                ...messages
+                ...messages.slice(-5) // Send last 5 messages for context
             ],
         });
 
@@ -52,6 +73,9 @@ export async function POST(req: Request) {
     } catch (error) {
         console.error('OpenAI API Error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+        return NextResponse.json(
+            { content: `Error: ${errorMessage}. Please check your connection or AI configuration.` },
+            { status: 200 } // Return as valid message to handle in UI
+        );
     }
 }

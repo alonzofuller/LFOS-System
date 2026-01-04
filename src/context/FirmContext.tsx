@@ -35,6 +35,7 @@ interface FirmContextType {
     financials: FinancialData;
     clients: Client[];
     addEmployee: (employee: Employee) => void;
+    updateEmployee: (id: string, updates: Partial<Employee>) => void;
     addTaskLog: (log: TaskLog) => void;
     updateFinancials: (data: Partial<FinancialData>) => void;
     addClient: (client: Client) => void;
@@ -216,6 +217,16 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const updateEmployee = async (id: string, updates: Partial<Employee>) => {
+        if (isConfigured) {
+            await updateDoc(doc(db, "employees", id), updates);
+        } else {
+            setEmployees((prev) =>
+                prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
+            );
+        }
+    };
+
     const addTaskLog = async (log: TaskLog) => {
         if (isConfigured) {
             await addDoc(collection(db, "taskLogs"), log);
@@ -363,6 +374,7 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                 financials: exposedFinancials,
                 clients,
                 addEmployee,
+                updateEmployee,
                 addTaskLog,
                 updateFinancials,
                 addClient,

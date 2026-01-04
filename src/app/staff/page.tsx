@@ -10,9 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PlusCircle, Save, Clock, Calculator, X, CheckCircle2, AlertTriangle, TrendingUp, DollarSign, FileText, Briefcase } from "lucide-react";
 
 export default function StaffPage() {
-    const { employees, addEmployee, taskLogs, addTaskLog, financials, clients, updateClient } = useFirmData();
+    const { employees, addEmployee, updateEmployee, taskLogs, addTaskLog, financials, clients, updateClient } = useFirmData();
     const [newEmployee, setNewEmployee] = useState({ name: "", role: "", hourlyCost: "", salary: "", dailyHours: "8", payType: "hourly" as "hourly" | "salary" });
     const [isSaving, setIsSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
+    const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null);
     const [logEntry, setLogEntry] = useState({
         employeeId: "",
         description: "",
@@ -87,24 +89,56 @@ export default function StaffPage() {
         }
 
         setIsSaving(true);
+        setSaveStatus("saving");
         try {
-            await addEmployee({
-                id: Math.random().toString(36).substr(2, 9),
+            const employeeData = {
+                id: editingEmployeeId || Math.random().toString(36).substr(2, 9),
                 name: newEmployee.name,
                 role: newEmployee.role || "Staff",
                 hourlyCost: Number(newEmployee.hourlyCost) || 0,
                 salary: newEmployee.salary ? Number(newEmployee.salary) : undefined,
                 dailyHours: Number(newEmployee.dailyHours) || 8,
                 dailyTarget: (Number(newEmployee.hourlyCost) || (Number(newEmployee.salary) / 2080)) * 3
-            });
+            };
+
+            if (editingEmployeeId) {
+                await updateEmployee(editingEmployeeId, employeeData);
+            } else {
+                await addEmployee(employeeData);
+            }
+
+            setSaveStatus("success");
+            setTimeout(() => setSaveStatus("idle"), 2000);
+
             setNewEmployee({ name: "", role: "", hourlyCost: "", salary: "", dailyHours: "8", payType: "hourly" });
-            alert("Employee added successfully to roster.");
+            setEditingEmployeeId(null);
         } catch (error) {
-            console.error("Failed to add employee:", error);
+            console.error("Failed to add/update employee:", error);
+            setSaveStatus("error");
             alert("Error: Failed to save to database. Please check your connection.");
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleEditClick = (emp: typeof employees[0]) => {
+        setEditingEmployeeId(emp.id);
+        setNewEmployee({
+            name: emp.name,
+            role: emp.role,
+            hourlyCost: emp.hourlyCost > 0 ? String(emp.hourlyCost) : "",
+            salary: emp.salary ? String(emp.salary) : "",
+            dailyHours: String(emp.dailyHours || 8),
+            payType: emp.salary && emp.salary > 0 ? "salary" : "hourly"
+        });
+        // Scroll to form
+        const formElement = document.getElementById("staff-form");
+        if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingEmployeeId(null);
+        setNewEmployee({ name: "", role: "", hourlyCost: "", salary: "", dailyHours: "8", payType: "hourly" });
     };
 
     const handleLogTask = () => {
@@ -177,6 +211,7 @@ export default function StaffPage() {
                                         <TableHead className="text-right">Daily Hrs</TableHead>
                                         <TableHead className="text-right">Rate/Salary</TableHead>
                                         <TableHead className="text-right">Total Labor</TableHead>
+                                        <TableHead className="text-right">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -186,7 +221,7 @@ export default function StaffPage() {
                                         const effectiveRate = getEffectiveHourlyCost(emp);
 
                                         return (
-                                            <TableRow key={emp.id}>
+                                            <TableRow key={emp.id} className={editingEmployeeId === emp.id ? "bg-primary/5 border-l-2 border-l-primary" : ""}>
                                                 <TableCell className="font-medium">
                                                     <div>{emp.name}</div>
                                                     <div className="text-xs text-muted-foreground">{emp.role}</div>
@@ -202,6 +237,12 @@ export default function StaffPage() {
                                                 <TableCell className="text-right font-medium text-amber-500">
                                                     ${totalLaborCost.toFixed(2)}
                                                 </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button variant="ghost" size="sm" onClick={() => handleEditClick(emp)} className="h-8 w-8 p-0">
+                                                        <Save className="h-4 w-4" />
+                                                        <span className="sr-only">Edit</span>
+                                                    </Button>
+                                                </TableCell>
                                             </TableRow>
                                         );
                                     })}
@@ -215,9 +256,17 @@ export default function StaffPage() {
                                 </TableBody>
                             </Table>
 
-                            <div className="mt-6 p-4 border border-white/10 rounded-lg bg-muted/20 space-y-4">
-                                <h4 className="text-sm font-semibold flex items-center gap-2">
-                                    <PlusCircle className="w-4 h-4" /> Add Personnel
+                            <div id="staff-form" className={`mt-6 p-4 border rounded-lg bg-muted/20 space-y-4 transition-all duration-300 ${editingEmployeeId ? 'border-primary shadow-[0_0_15px_rgba(var(--primary),0.1)]' : 'border-white/10'}`}>
+                                <h4 className="text-sm font-semibold flex items-center justify-between">
+                                    <span className="flex items-center gap-2">
+                                        {editingEmployeeId ? <Save className="w-4 h-4 text-primary" /> : <PlusCircle className="w-4 h-4" />}
+                                        {editingEmployeeId ? "Edit Personnel" : "Add Personnel"}
+                                    </span>
+                                    {editingEmployeeId && (
+                                        <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="h-7 text-xs gap-1">
+                                            <X className="w-3 h-3" /> Cancel
+                                        </Button>
+                                    )}
                                 </h4>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
@@ -251,8 +300,19 @@ export default function StaffPage() {
                                         <Input type="number" step="0.5" placeholder="8" value={newEmployee.dailyHours} onChange={(e) => setNewEmployee({ ...newEmployee, dailyHours: e.target.value })} />
                                     </div>
                                     <div className="col-span-2">
-                                        <Button onClick={handleAddEmployee} className="w-full" disabled={isSaving}>
-                                            {isSaving ? "Saving..." : "Add to Roster"}
+                                        <Button
+                                            onClick={handleAddEmployee}
+                                            className={`w-full transition-all duration-300 ${saveStatus === 'success' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                                            disabled={isSaving}
+                                        >
+                                            {saveStatus === 'saving' && "Processing..."}
+                                            {saveStatus === 'success' && (
+                                                <span className="flex items-center gap-2">
+                                                    <CheckCircle2 className="w-4 h-4" /> {editingEmployeeId ? "Updated Successfully" : "Added to Roster"}
+                                                </span>
+                                            )}
+                                            {saveStatus === 'error' && "Error - Try Again"}
+                                            {saveStatus === 'idle' && (editingEmployeeId ? "Update Employee Data" : "Add to Roster")}
                                         </Button>
                                     </div>
                                 </div>
