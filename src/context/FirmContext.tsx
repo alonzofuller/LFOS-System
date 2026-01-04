@@ -205,9 +205,7 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
     const addEmployee = async (employee: Employee) => {
         if (isConfigured) {
             try {
-                console.log(`[Firestore] Attempting to add employee: ${employee.id}`);
                 await setDoc(doc(db, "employees", employee.id), employee);
-                console.log(`[Firestore] Successfully added employee: ${employee.id}`);
             } catch (error) {
                 console.error(`[Firestore] Error adding employee ${employee.id}:`, error);
                 throw error;
@@ -237,9 +235,7 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
     const addClient = async (client: Client) => {
         if (isConfigured) {
             try {
-                console.log(`[Firestore] Attempting to add client: ${client.id}`);
                 await setDoc(doc(db, "clients", client.id), client);
-                console.log(`[Firestore] Successfully added client: ${client.id}`);
             } catch (error) {
                 console.error(`[Firestore] Error adding client ${client.id}:`, error);
                 throw error;
@@ -313,9 +309,7 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
 
         if (isConfigured) {
             try {
-                console.log(`[Firestore] Attempting to add ticket: ${id}`);
                 await setDoc(doc(db, "tickets", id), newTicket);
-                console.log(`[Firestore] Successfully added ticket: ${id}`);
             } catch (error) {
                 console.error(`[Firestore] Error adding ticket ${id}:`, error);
                 throw error;
