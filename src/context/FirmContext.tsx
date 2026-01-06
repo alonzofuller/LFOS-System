@@ -61,6 +61,7 @@ interface FirmContextType {
         total_daily_hours: number;
         hourly_burn_rate: number | null;
     };
+    isCloudSyncActive: boolean;
 }
 
 const FirmContext = createContext<FirmContextType | undefined>(undefined);
@@ -420,7 +421,8 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                 addCaseType,
                 updateCaseType,
                 deleteCaseType,
-                dailyBurnMetrics
+                dailyBurnMetrics,
+                isCloudSyncActive: isConfigured
             }}
         >
             {children}

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, BadgeDollarSign, ShieldAlert, BarChart3, FileText, Sparkles, Settings } from "lucide-react";
+import { LayoutDashboard, Users, BadgeDollarSign, ShieldAlert, FileText, Sparkles, Settings, Cloud, CloudOff } from "lucide-react";
+import { useFirmData } from "@/context/FirmContext";
 
 const navItems = [
     { href: "/", label: "Command Center", icon: LayoutDashboard },
@@ -17,6 +18,7 @@ const navItems = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const { isCloudSyncActive } = useFirmData();
 
     return (
         <div className="flex flex-col w-64 border-r bg-card/30 min-h-screen p-4 space-y-4">
@@ -46,10 +48,20 @@ export function Sidebar() {
                 })}
             </nav>
 
-            <div className="mt-auto px-4 py-4 border-t">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="mt-auto px-4 py-4 border-t space-y-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     System Online
+                </div>
+
+                <div className={cn(
+                    "flex items-center gap-2 text-[10px] font-bold uppercase p-2 rounded border",
+                    isCloudSyncActive
+                        ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                        : "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                )}>
+                    {isCloudSyncActive ? <Cloud className="w-3 h-3" /> : <CloudOff className="w-3 h-3" />}
+                    {isCloudSyncActive ? "Cloud Sync Active" : "Local Only Mode"}
                 </div>
             </div>
         </div>
