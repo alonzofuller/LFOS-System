@@ -37,6 +37,7 @@ interface FirmContextType {
     clients: Client[];
     addEmployee: (employee: Employee) => void;
     updateEmployee: (id: string, updates: Partial<Employee>) => void;
+    deleteEmployee: (id: string) => void;
     addTaskLog: (log: TaskLog) => void;
     updateFinancials: (data: Partial<FinancialData>) => void;
     addClient: (client: Client) => void;
@@ -323,6 +324,17 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const deleteEmployee = async (id: string) => {
+        if (isConfigured) {
+            await deleteDoc(doc(db, "employees", id));
+            setEmployees(prev => prev.filter(e => e.id !== id));
+            addDebugLog(`Delete SUCCESS: ${id}`);
+        } else {
+            console.log("[Local] Deleting employee from local state");
+            setEmployees(prev => prev.filter(e => e.id !== id));
+        }
+    };
+
     const addTaskLog = async (log: TaskLog) => {
         if (isConfigured) {
             await addDoc(collection(db, "taskLogs"), log);
@@ -471,6 +483,7 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                 clients,
                 addEmployee,
                 updateEmployee,
+                deleteEmployee,
                 addTaskLog,
                 updateFinancials,
                 addClient,

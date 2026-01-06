@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Save, Clock, Calculator, X, CheckCircle2, AlertTriangle, TrendingUp, DollarSign, FileText, Briefcase } from "lucide-react";
+import { PlusCircle, Save, Clock, Calculator, X, CheckCircle2, AlertTriangle, TrendingUp, DollarSign, FileText, Briefcase, Trash2 } from "lucide-react";
 
 export default function StaffPage() {
-    const { employees, addEmployee, updateEmployee, taskLogs, addTaskLog, financials, clients, updateClient } = useFirmData();
+    const { employees, addEmployee, updateEmployee, deleteEmployee, taskLogs, addTaskLog, financials, clients, updateClient } = useFirmData();
     const [newEmployee, setNewEmployee] = useState({ name: "", role: "", hourlyCost: "", salary: "", dailyHours: "8", payType: "hourly" as "hourly" | "salary" });
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
@@ -241,6 +241,19 @@ export default function StaffPage() {
                                                     <Button variant="ghost" size="sm" onClick={() => handleEditClick(emp)} className="h-8 w-8 p-0">
                                                         <Save className="h-4 w-4" />
                                                         <span className="sr-only">Edit</span>
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            if (confirm("Are you sure you want to remove this employee?")) {
+                                                                deleteEmployee(emp.id);
+                                                            }
+                                                        }}
+                                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                        <span className="sr-only">Delete</span>
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
