@@ -291,7 +291,7 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                     addDebugLog("Creating NEW record (addDoc)...");
                     const { id, ...dataToSave } = employee;
                     const docRef = await addDoc(collection(db, "employees"), dataToSave);
-                    setEmployees(prev => [...prev, { ...employee, id: docRef.id }]);
+                    // No manual state update here; relying on onSnapshot to prevent duplicates
                     addDebugLog(`Create SUCCESS. Generated ID: ${docRef.id}`);
                 }
             } catch (error: any) {
