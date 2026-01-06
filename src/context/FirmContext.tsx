@@ -262,16 +262,22 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
     const addEmployee = async (employee: Employee) => {
         if (isConfigured) {
             try {
-                // If the employee already has an business ID, use it, otherwise let firestore generate
-                const docRef = employee.id && employee.id.length > 5
-                    ? doc(db, "employees", employee.id)
-                    : doc(collection(db, "employees"));
-
-                const finalEmployee = { ...employee, id: docRef.id };
-                await setDoc(docRef, finalEmployee);
-                console.log(`[Cloud] Saved employee: ${finalEmployee.name} with ID: ${docRef.id}`);
+                // Determine if we are updating (with existing ID) or adding new (empty ID)
+                if (employee.id && employee.id.length > 5) {
+                    // Existing ID - specific write
+                    const docRef = doc(db, "employees", employee.id);
+                    await setDoc(docRef, employee);
+                    console.log(`[Cloud] Updated employee: ${employee.name} at ${docRef.id}`);
+                } else {
+                    // New Record - use addDoc for safety
+                    // Remove the empty ID field so Firestore generates one
+                    const { id, ...dataToSave } = employee;
+                    const docRef = await addDoc(collection(db, "employees"), dataToSave);
+                    console.log(`[Cloud] Created new employee: ${employee.name} at ${docRef.id}`);
+                }
             } catch (error) {
-                console.error(`[Firestore] Error adding employee:`, error);
+                console.error(`[Firestore] Error adding/updating employee:`, error);
+                alert(`System Error: Could not save to cloud. ${error}`);
                 throw error;
             }
         } else {
