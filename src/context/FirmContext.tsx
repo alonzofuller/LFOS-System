@@ -284,11 +284,13 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                     addDebugLog("Updating existing record...");
                     const docRef = doc(db, "employees", employee.id);
                     await setDoc(docRef, employee);
+                    setEmployees(prev => prev.map(e => e.id === employee.id ? employee : e));
                     addDebugLog(`Update SUCCESS: ${docRef.id}`);
                 } else {
                     addDebugLog("Creating NEW record (addDoc)...");
                     const { id, ...dataToSave } = employee;
                     const docRef = await addDoc(collection(db, "employees"), dataToSave);
+                    setEmployees(prev => [...prev, { ...employee, id: docRef.id }]);
                     addDebugLog(`Create SUCCESS. Generated ID: ${docRef.id}`);
                 }
             } catch (error: any) {
@@ -311,6 +313,9 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
     const updateEmployee = async (id: string, updates: Partial<Employee>) => {
         if (isConfigured) {
             await updateDoc(doc(db, "employees", id), updates);
+            setEmployees((prev) =>
+                prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
+            );
         } else {
             setEmployees((prev) =>
                 prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
