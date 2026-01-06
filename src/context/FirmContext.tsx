@@ -62,6 +62,7 @@ interface FirmContextType {
         hourly_burn_rate: number | null;
     };
     isCloudSyncActive: boolean;
+    firebaseProjectId: string | null;
 }
 
 const FirmContext = createContext<FirmContextType | undefined>(undefined);
@@ -180,12 +181,19 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
         console.log("Firebase Backend detected. Initializing real-time listeners...");
 
         const unsubEmployees = onSnapshot(collection(db, "employees"), (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ ...doc.data() })) as Employee[];
+            const data = snapshot.docs.map(doc => {
+                const docData = doc.data();
+                return {
+                    ...docData,
+                    id: doc.id // Force the document ID to be the object ID
+                };
+            }) as Employee[];
+            console.log(`[Sync] Received ${data.length} employees from cloud.`);
             setEmployees(data);
         }, (err) => console.error("Employees Stream Error:", err));
 
         const unsubTaskLogs = onSnapshot(collection(db, "taskLogs"), (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ ...doc.data() })) as TaskLog[];
+            const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as TaskLog[];
             setTaskLogs(data);
         }, (err) => console.error("TaskLogs Stream Error:", err));
 
@@ -196,22 +204,22 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
         }, (err) => console.error("Financials Stream Error:", err));
 
         const unsubClients = onSnapshot(collection(db, "clients"), (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ ...doc.data() })) as Client[];
+            const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Client[];
             setClients(data);
         }, (err) => console.error("Clients Stream Error:", err));
 
         const unsubTransactions = onSnapshot(query(collection(db, "transactions"), orderBy("date", "desc")), (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ ...doc.data() })) as CashTransaction[];
+            const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as CashTransaction[];
             setCashboxTransactions(data);
         }, (err) => console.error("Transactions Stream Error:", err));
 
         const unsubTickets = onSnapshot(query(collection(db, "tickets"), orderBy("createdAt", "desc")), (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ ...doc.data() })) as SupportTicket[];
+            const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as SupportTicket[];
             setTickets(data);
         }, (err) => console.error("Tickets Stream Error:", err));
 
         const unsubCaseTypes = onSnapshot(collection(db, "caseTypes"), (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ ...doc.data() })) as CaseType[];
+            const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as CaseType[];
             const storedIds = new Set(data.map(ct => ct.id));
             const newDefaults = DEFAULT_CASE_TYPES.filter(d => !storedIds.has(d.id));
             setCaseTypes([...data, ...newDefaults]);
@@ -237,14 +245,25 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
     const addEmployee = async (employee: Employee) => {
         if (isConfigured) {
             try {
-                await setDoc(doc(db, "employees", employee.id), employee);
+                // If the employee already has an business ID, use it, otherwise let firestore generate
+                const docRef = employee.id && employee.id.length > 5
+                    ? doc(db, "employees", employee.id)
+                    : doc(collection(db, "employees"));
+
+                const finalEmployee = { ...employee, id: docRef.id };
+                await setDoc(docRef, finalEmployee);
+                console.log(`[Cloud] Saved employee: ${finalEmployee.name} with ID: ${docRef.id}`);
             } catch (error) {
-                console.error(`[Firestore] Error adding employee ${employee.id}:`, error);
+                console.error(`[Firestore] Error adding employee:`, error);
                 throw error;
             }
         } else {
             console.log("[Local] Saving employee to local state");
-            setEmployees((prev) => [...prev, employee]);
+            const finalEmployee = {
+                ...employee,
+                id: employee.id || Math.random().toString(36).substr(2, 9)
+            };
+            setEmployees((prev) => [...prev, finalEmployee]);
         }
     };
 
@@ -422,7 +441,8 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                 updateCaseType,
                 deleteCaseType,
                 dailyBurnMetrics,
-                isCloudSyncActive: isConfigured
+                isCloudSyncActive: isConfigured,
+                firebaseProjectId: isConfigured ? (db as any)._databaseId.projectId : null
             }}
         >
             {children}

@@ -18,7 +18,7 @@ const navItems = [
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { isCloudSyncActive } = useFirmData();
+    const { isCloudSyncActive, firebaseProjectId } = useFirmData();
 
     return (
         <div className="flex flex-col w-64 border-r bg-card/30 min-h-screen p-4 space-y-4">
@@ -55,13 +55,20 @@ export function Sidebar() {
                 </div>
 
                 <div className={cn(
-                    "flex items-center gap-2 text-[10px] font-bold uppercase p-2 rounded border",
+                    "flex flex-col gap-1 p-2 rounded border",
                     isCloudSyncActive
                         ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
                         : "bg-amber-500/10 border-amber-500/20 text-amber-500"
                 )}>
-                    {isCloudSyncActive ? <Cloud className="w-3 h-3" /> : <CloudOff className="w-3 h-3" />}
-                    {isCloudSyncActive ? "Cloud Sync Active" : "Local Only Mode"}
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase">
+                        {isCloudSyncActive ? <Cloud className="w-3 h-3" /> : <CloudOff className="w-3 h-3" />}
+                        {isCloudSyncActive ? "Cloud Sync Active" : "Local Only Mode"}
+                    </div>
+                    {isCloudSyncActive && firebaseProjectId && (
+                        <div className="text-[8px] opacity-50 truncate font-mono">
+                            PID: {firebaseProjectId}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -92,14 +92,14 @@ export default function StaffPage() {
         setSaveStatus("saving");
         try {
             const employeeData = {
-                id: editingEmployeeId || Math.random().toString(36).substr(2, 9),
+                id: editingEmployeeId || "", // Empty string triggers auto-generation in context
                 name: newEmployee.name,
                 role: newEmployee.role || "Staff",
                 hourlyCost: Number(newEmployee.hourlyCost) || 0,
                 salary: newEmployee.salary ? Number(newEmployee.salary) : undefined,
                 dailyHours: Number(newEmployee.dailyHours) || 8,
                 dailyTarget: (Number(newEmployee.hourlyCost) || (Number(newEmployee.salary) / 2080)) * 3
-            };
+            } as any;
 
             if (editingEmployeeId) {
                 await updateEmployee(editingEmployeeId, employeeData);
