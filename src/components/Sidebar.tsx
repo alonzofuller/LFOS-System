@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, BadgeDollarSign, ShieldAlert, FileText, Sparkles, Settings, Cloud, CloudOff } from "lucide-react";
+import { LayoutDashboard, Users, BadgeDollarSign, ShieldAlert, FileText, Sparkles, Settings, Cloud, CloudOff, RefreshCw } from "lucide-react";
 import { useFirmData } from "@/context/FirmContext";
+import { Button } from "./ui/button";
 
 const navItems = [
     { href: "/", label: "Command Center", icon: LayoutDashboard },
@@ -18,7 +19,7 @@ const navItems = [
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { isCloudSyncActive, firebaseProjectId } = useFirmData();
+    const { isCloudSyncActive, firebaseProjectId, refreshEmployees } = useFirmData();
 
     return (
         <div className="flex flex-col w-64 border-r bg-card/30 min-h-screen p-4 space-y-4">
@@ -70,6 +71,21 @@ export function Sidebar() {
                         </div>
                     )}
                 </div>
+
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs h-7 gap-2"
+                    onClick={async () => {
+                        if (refreshEmployees) {
+                            await refreshEmployees();
+                            alert("Staff roster refreshed from Firestore.");
+                        }
+                    }}
+                >
+                    <RefreshCw className="w-3 h-3" />
+                    Refresh Staff Roster
+                </Button>
             </div>
         </div>
     );

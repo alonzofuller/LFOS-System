@@ -12,7 +12,8 @@ import {
     updateDoc,
     deleteDoc,
     query,
-    orderBy
+    orderBy,
+    getDocs
 } from "firebase/firestore";
 
 // Default Case Type Templates with Estimated Hours
@@ -63,6 +64,7 @@ interface FirmContextType {
     };
     isCloudSyncActive: boolean;
     firebaseProjectId: string | null;
+    refreshEmployees: () => Promise<void>;
 }
 
 const FirmContext = createContext<FirmContextType | undefined>(undefined);
@@ -241,6 +243,21 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
         const data = { employees, taskLogs, financials, clients, cashboxTransactions, tickets, caseTypes };
         localStorage.setItem("law-firm-os-data", JSON.stringify(data));
     }, [employees, taskLogs, financials, clients, cashboxTransactions, tickets, caseTypes]);
+
+    const refreshEmployees = async () => {
+        if (!isConfigured) return;
+        try {
+            const snapshot = await getDocs(collection(db, "employees"));
+            const data = snapshot.docs.map(doc => ({
+                ...doc.data(),
+                id: doc.id
+            })) as Employee[];
+            console.log(`[Manual Refresh] Loaded ${data.length} employees`);
+            setEmployees(data);
+        } catch (e) {
+            console.error("[Manual Refresh] Failed to load employees:", e);
+        }
+    };
 
     const addEmployee = async (employee: Employee) => {
         if (isConfigured) {
@@ -442,7 +459,8 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                 deleteCaseType,
                 dailyBurnMetrics,
                 isCloudSyncActive: isConfigured,
-                firebaseProjectId: isConfigured ? (db as any)._databaseId.projectId : null
+                firebaseProjectId: isConfigured ? (db as any)._databaseId.projectId : null,
+                refreshEmployees
             }}
         >
             {children}
