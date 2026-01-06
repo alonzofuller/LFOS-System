@@ -149,7 +149,9 @@ export default function SettingsPage() {
         taskLogs,
         financials,
         cashboxTransactions,
-        caseTypes
+        caseTypes,
+        debugLogs,
+        clearLogs
     } = useFirmData();
     const [activeTab, setActiveTab] = useState("overview");
     const [isMigrating, setIsMigrating] = useState(false);
@@ -208,6 +210,13 @@ export default function SettingsPage() {
                         onClick={() => setActiveTab("data")}
                     >
                         <Trash2 className="w-4 h-4 mr-2" /> Data Management
+                    </Button>
+                    <Button
+                        variant={activeTab === "logs" ? "default" : "ghost"}
+                        className="w-full justify-start text-muted-foreground"
+                        onClick={() => setActiveTab("logs")}
+                    >
+                        <Terminal className="w-4 h-4 mr-2" /> System Logs (Debug)
                     </Button>
                 </div>
 
@@ -676,6 +685,34 @@ export default function SettingsPage() {
                                         <li>All cashbox transactions</li>
                                         <li>All client records</li>
                                     </ul>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {activeTab === "logs" && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Terminal className="w-5 h-5 text-primary" />
+                                    System Debug Logs
+                                </CardTitle>
+                                <CardDescription>
+                                    Live activity log for troubleshooting Firestore synchronization issues.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex justify-end">
+                                    <Button variant="outline" size="sm" onClick={clearLogs}>Clear Logs</Button>
+                                </div>
+                                <div className="bg-black/80 text-green-400 font-mono text-xs p-4 rounded h-[400px] overflow-y-auto">
+                                    {debugLogs.length === 0 ? (
+                                        <div className="opacity-50">No activity logged yet...</div>
+                                    ) : (
+                                        debugLogs.map((log, i) => (
+                                            <div key={i} className="mb-1 border-b border-white/5 pb-1 last:border-0">{log}</div>
+                                        ))
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

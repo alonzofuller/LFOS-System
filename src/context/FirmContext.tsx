@@ -65,6 +65,8 @@ interface FirmContextType {
     isCloudSyncActive: boolean;
     firebaseProjectId: string | null;
     refreshEmployees: () => Promise<void>;
+    debugLogs: string[];
+    clearLogs: () => void;
 }
 
 const FirmContext = createContext<FirmContextType | undefined>(undefined);
@@ -96,6 +98,7 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
     const [taskLogs, setTaskLogs] = useState<TaskLog[]>([]);
     const [financials, setFinancials] = useState<FinancialData>(INITIAL_FINANCIALS);
     const [clients, setClients] = useState<Client[]>([]);
+    const [debugLogs, setDebugLogs] = useState<string[]>([]);
     const [cashboxTransactions, setCashboxTransactions] = useState<CashTransaction[]>([]);
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
     const [caseTypes, setCaseTypes] = useState<CaseType[]>(DEFAULT_CASE_TYPES);
@@ -244,44 +247,59 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("law-firm-os-data", JSON.stringify(data));
     }, [employees, taskLogs, financials, clients, cashboxTransactions, tickets, caseTypes]);
 
+    const addDebugLog = (msg: string) => {
+        const timestamp = new Date().toLocaleTimeString();
+        setDebugLogs(prev => [`[${timestamp}] ${msg}`, ...prev].slice(0, 50));
+    };
+
+    const clearLogs = () => setDebugLogs([]);
+
     const refreshEmployees = async () => {
-        if (!isConfigured) return;
+        if (!isConfigured) {
+            addDebugLog("Refresh skipped: Firebase not configured");
+            return;
+        }
         try {
+            addDebugLog("Starting manual refresh...");
             const snapshot = await getDocs(collection(db, "employees"));
+            addDebugLog(`Refresh complete. Found ${snapshot.size} docs.`);
             const data = snapshot.docs.map(doc => ({
                 ...doc.data(),
                 id: doc.id
             })) as Employee[];
-            console.log(`[Manual Refresh] Loaded ${data.length} employees`);
             setEmployees(data);
         } catch (e) {
             console.error("[Manual Refresh] Failed to load employees:", e);
+            addDebugLog(`Refresh FAILED: ${e}`);
         }
     };
 
     const addEmployee = async (employee: Employee) => {
         if (isConfigured) {
             try {
+                addDebugLog(`Attempting to save: ${employee.name}`);
+
                 // Determine if we are updating (with existing ID) or adding new (empty ID)
                 if (employee.id && employee.id.length > 5) {
-                    // Existing ID - specific write
+                    addDebugLog("Updating existing record...");
                     const docRef = doc(db, "employees", employee.id);
                     await setDoc(docRef, employee);
-                    console.log(`[Cloud] Updated employee: ${employee.name} at ${docRef.id}`);
+                    addDebugLog(`Update SUCCESS: ${docRef.id}`);
                 } else {
-                    // New Record - use addDoc for safety
-                    // Remove the empty ID field so Firestore generates one
+                    addDebugLog("Creating NEW record (addDoc)...");
                     const { id, ...dataToSave } = employee;
                     const docRef = await addDoc(collection(db, "employees"), dataToSave);
-                    console.log(`[Cloud] Created new employee: ${employee.name} at ${docRef.id}`);
+                    addDebugLog(`Create SUCCESS. Generated ID: ${docRef.id}`);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`[Firestore] Error adding/updating employee:`, error);
-                alert(`System Error: Could not save to cloud. ${error}`);
+                const errMsg = error?.message || "Unknown error";
+                addDebugLog(`SAVE ERROR: ${errMsg}`);
+                alert(`System Error: ${errMsg}`);
                 throw error;
             }
         } else {
-            console.log("[Local] Saving employee to local state");
+            addDebugLog("Local Mode: Saving to state only");
             const finalEmployee = {
                 ...employee,
                 id: employee.id || Math.random().toString(36).substr(2, 9)
@@ -466,7 +484,9 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                 dailyBurnMetrics,
                 isCloudSyncActive: isConfigured,
                 firebaseProjectId: isConfigured ? (db as any)._databaseId.projectId : null,
-                refreshEmployees
+                refreshEmployees,
+                debugLogs,
+                clearLogs
             }}
         >
             {children}
