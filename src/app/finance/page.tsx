@@ -17,7 +17,19 @@ const DEPOSIT_CATEGORIES = [
 ] as const;
 
 export default function FinancePage() {
-    const { financials, updateFinancials, employees, cashboxTransactions, addCashTransaction, addCustomExpense, deleteCustomExpense, dailyBurnMetrics } = useFirmData();
+    const {
+        financials,
+        updateFinancials,
+        employees,
+        cashboxTransactions,
+        addCashTransaction,
+        addCustomExpense,
+        deleteCustomExpense,
+        dailyBurnMetrics,
+        incomeEntries,
+        addIncomeEntry,
+        taskLogs
+    } = useFirmData();
     const [editing, setEditing] = useState(false);
     const [showCashboxModal, setShowCashboxModal] = useState(false);
     const [newExpenseName, setNewExpenseName] = useState("");
@@ -140,6 +152,80 @@ export default function FinancePage() {
     const cashIn = cashboxTransactions.filter(tx => tx.type === "in" && tx.paymentMethod === "cash").reduce((acc, tx) => acc + tx.amount, 0);
     const checkIn = cashboxTransactions.filter(tx => tx.type === "in" && tx.paymentMethod === "check").reduce((acc, tx) => acc + tx.amount, 0);
 
+    // === WEEKLY FINANCIAL LOGIC (Wed-Tue) ===
+    const getFiscalWeekRange = () => {
+        const today = new Date();
+        const currentDay = today.getDay(); // 0=Sun, 1=Mon, ..., 3=Wed, ..., 6=Sat
+
+        // Calculate days since last Wednesday
+        // If today is Wednesday (3), days since is 0.
+        // If today is Tuesday (2), days since is 6.
+        let daysSinceWed = currentDay - 3;
+        if (daysSinceWed < 0) daysSinceWed += 7;
+
+        const start = new Date(today);
+        start.setDate(today.getDate() - daysSinceWed);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        end.setHours(23, 59, 59, 999);
+
+        return { start, end };
+    };
+
+    const { start: weekStart, end: weekEnd } = getFiscalWeekRange();
+
+    // Filter Income
+    const weeklyIncome = (incomeEntries || []).filter(entry => {
+        const d = new Date(entry.date);
+        return d >= weekStart && d <= weekEnd;
+    });
+    const totalWeeklyIncome = weeklyIncome.reduce((acc, entry) => acc + entry.amount, 0);
+
+    // Filter Labor (Task Logs)
+    const weeklyLabor = taskLogs.filter(log => {
+        const d = new Date(log.date); // Log date is YYYY-MM-DD
+        // Create date object in local time to match range
+        const logDate = new Date(log.date + "T12:00:00");
+        return logDate >= weekStart && logDate <= weekEnd;
+    });
+    const totalWeeklyLaborCost = weeklyLabor.reduce((acc, log) => acc + (log.laborCost || 0), 0);
+    const totalWeeklyProductionCost = weeklyLabor.reduce((acc, log) => acc + (log.productionCost || 0), 0);
+
+    // Calculate Fixed Overhead for period (7 days)
+    // Using simple 7 * daily_fixed_overhead from context
+    const weeklyFixedOverhead = dailyBurnMetrics.daily_fixed_overhead * 7;
+    const totalWeeklyExpenses = totalWeeklyLaborCost + weeklyFixedOverhead;
+
+    const weeklyNetProfit = totalWeeklyIncome - totalWeeklyExpenses;
+
+    // State for new income entry
+    const [newIncome, setNewIncome] = useState({
+        amount: "",
+        clientName: "",
+        description: "",
+        category: "Retainer",
+        method: "Check",
+        date: new Date().toISOString().split('T')[0]
+    });
+
+    const handleAddIncome = () => {
+        if (!newIncome.amount || !newIncome.clientName) {
+            alert("Please entering amount and client name.");
+            return;
+        }
+        addIncomeEntry({
+            id: Math.random().toString(36).substr(2, 9),
+            ...newIncome,
+            amount: Number(newIncome.amount),
+            date: newIncome.date,
+            method: newIncome.method as any,
+            category: newIncome.category as any
+        });
+        setNewIncome({ ...newIncome, amount: "", clientName: "", description: "" });
+    };
+
     return (
         <div className="min-h-screen p-8 md:p-12 space-y-8 bg-gradient-to-br from-slate-900 via-emerald-900/20 to-slate-900">
             <header className="flex justify-between items-end border-b border-white/10 pb-6">
@@ -151,6 +237,152 @@ export default function FinancePage() {
                     {editing ? "Save Changes" : "Edit Financials"}
                 </Button>
             </header>
+
+            <div className="grid gap-6">
+                {/* WEEKLY PROFIT & LOSS ENGINE */}
+                <Card className="bg-slate-950 border-emerald-500/30 overflow-hidden relative">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-cyan-500" />
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <CardTitle className="text-2xl text-white">Weekly Situational Analysis</CardTitle>
+                                <CardDescription className="text-slate-400">
+                                    Fiscal Week: {weekStart.toLocaleDateString()} — {weekEnd.toLocaleDateString()}
+                                </CardDescription>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-sm font-medium text-slate-400 uppercase tracking-widest">Net Profit</div>
+                                <div className={`text-4xl font-bold tracking-tighter ${weeklyNetProfit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                    {weeklyNetProfit >= 0 ? "+" : ""}${weeklyNetProfit.toLocaleString()}
+                                </div>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="grid gap-6 md:grid-cols-3">
+                        {/* INCOME COLUMN */}
+                        <div className="space-y-4">
+                            <div className="rounded-lg bg-emerald-950/20 border border-emerald-500/20 p-4">
+                                <div className="text-sm text-emerald-400 font-medium uppercase mb-1">Total Income</div>
+                                <div className="text-3xl font-bold text-white">${totalWeeklyIncome.toLocaleString()}</div>
+                                <div className="text-xs text-slate-500 mt-2">Deposits & Payments</div>
+                            </div>
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-semibold uppercase text-slate-500">Record New Income</h4>
+                                <Input
+                                    placeholder="Amount ($)"
+                                    type="number"
+                                    value={newIncome.amount}
+                                    onChange={e => setNewIncome({ ...newIncome, amount: e.target.value })}
+                                    className="bg-slate-900 border-slate-700"
+                                />
+                                <Input
+                                    placeholder="Client Name"
+                                    value={newIncome.clientName}
+                                    onChange={e => setNewIncome({ ...newIncome, clientName: e.target.value })}
+                                    className="bg-slate-900 border-slate-700"
+                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <select
+                                        className="h-9 rounded-md border border-slate-700 bg-slate-900 px-3 text-sm"
+                                        value={newIncome.category}
+                                        onChange={e => setNewIncome({ ...newIncome, category: e.target.value })}
+                                    >
+                                        <option>Retainer</option>
+                                        <option>Monthly Fee</option>
+                                        <option>Flat Fee</option>
+                                        <option>Consultation</option>
+                                        <option>Other</option>
+                                    </select>
+                                    <select
+                                        className="h-9 rounded-md border border-slate-700 bg-slate-900 px-3 text-sm"
+                                        value={newIncome.method}
+                                        onChange={e => setNewIncome({ ...newIncome, method: e.target.value })}
+                                    >
+                                        <option>Check</option>
+                                        <option>Cash</option>
+                                        <option>Credit Card</option>
+                                        <option>Zelle</option>
+                                        <option>Wire</option>
+                                    </select>
+                                </div>
+                                <Input
+                                    placeholder="Description (Optional)"
+                                    value={newIncome.description}
+                                    onChange={e => setNewIncome({ ...newIncome, description: e.target.value })}
+                                    className="bg-slate-900 border-slate-700 text-xs"
+                                />
+                                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleAddIncome}>
+                                    Add Income
+                                </Button>
+                            </div>
+                            <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
+                                {weeklyIncome.map(inc => (
+                                    <div key={inc.id} className="text-xs flex justify-between p-2 rounded bg-slate-800/50 border border-slate-700/50">
+                                        <div>
+                                            <div className="font-medium text-slate-200">{inc.clientName}</div>
+                                            <div className="text-slate-500">{inc.method} • {new Date(inc.date).toLocaleDateString()}</div>
+                                        </div>
+                                        <div className="font-bold text-emerald-400">+${inc.amount}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* EXPENSE COLUMN */}
+                        <div className="space-y-4">
+                            <div className="rounded-lg bg-red-950/20 border border-red-500/20 p-4">
+                                <div className="text-sm text-red-400 font-medium uppercase mb-1">Total Expenses</div>
+                                <div className="text-3xl font-bold text-white">${totalWeeklyExpenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                                <div className="text-xs text-slate-500 mt-2">Labor + Fixed Overhead</div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm p-2 bg-slate-800/50 rounded">
+                                    <span className="text-slate-400">Labor Cost (Actual)</span>
+                                    <span className="font-medium text-white">${totalWeeklyLaborCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                </div>
+                                <div className="flex justify-between text-sm p-2 bg-slate-800/50 rounded">
+                                    <span className="text-slate-400">Fixed Overhead (7 Days)</span>
+                                    <span className="font-medium text-white">${weeklyFixedOverhead.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-slate-800">
+                                    <h4 className="text-xs font-semibold uppercase text-slate-500 mb-2">Cost Drivers (By Employee)</h4>
+                                    {employees.map(emp => {
+                                        const empLabor = weeklyLabor.filter(l => l.employeeId === emp.id).reduce((sum, l) => sum + l.laborCost, 0);
+                                        if (empLabor === 0) return null;
+                                        return (
+                                            <div key={emp.id} className="flex justify-between text-xs mb-1">
+                                                <span className="text-slate-400">{emp.name}</span>
+                                                <span className="text-red-300">-${empLabor.toFixed(0)}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* INSIGHTS COLUMN */}
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-semibold uppercase text-slate-500">Intelligence Report</h4>
+                            <div className={`p-4 rounded border text-sm ${weeklyNetProfit > 0 ? "bg-emerald-950/10 border-emerald-500/20 text-emerald-200" : "bg-red-950/10 border-red-500/20 text-red-200"}`}>
+                                {weeklyNetProfit > 0
+                                    ? "Firm is PROFITABLE this week. Revenue exceeds operating costs. Consider reinvesting in case acquisition."
+                                    : "Firm is operating at a LOSS this week. Immediate attention required: Increase intake or reduce non-essential labor."
+                                }
+                            </div>
+
+                            <div className="space-y-2 mt-4">
+                                <h4 className="text-xs font-semibold uppercase text-slate-500">Efficiency Ratio</h4>
+                                <div className="text-xs text-slate-400">
+                                    For every $1.00 spent on labor/overhead, the firm generated:
+                                </div>
+                                <div className={`text-2xl font-bold ${totalWeeklyIncome / (totalWeeklyExpenses || 1) > 1 ? "text-emerald-400" : "text-amber-400"}`}>
+                                    ${(totalWeeklyIncome / (totalWeeklyExpenses || 1)).toFixed(2)}
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
             <div className="grid gap-6 md:grid-cols-3">
                 <Card className="col-span-2 bg-card/80 backdrop-blur-sm border-white/10">

@@ -63,6 +63,17 @@ export type CashTransaction = {
     performedBy: string;
 };
 
+export type IncomeEntry = {
+    id: string;
+    date: string;
+    amount: number;
+    clientName: string; // or link to Client ID
+    description: string;
+    category: "Retainer" | "Monthly Fee" | "Flat Fee" | "Consultation" | "Other";
+    method: "Cash" | "Check" | "Credit Card" | "Zelle" | "Wire";
+    notes?: string;
+};
+
 export type Client = {
     id: string;
     name: string; // The Inmate

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Employee, TaskLog, FinancialData, Client, CashTransaction, CustomExpense, SupportTicket, CaseType } from "@/types";
+import { Employee, TaskLog, FinancialData, Client, CashTransaction, CustomExpense, SupportTicket, CaseType, IncomeEntry } from "@/types";
 import { db, isConfigured } from "@/lib/firebase";
 import {
     collection,
@@ -46,6 +46,9 @@ interface FirmContextType {
     addCashTransaction: (transaction: CashTransaction) => void;
     addCustomExpense: (expense: CustomExpense) => void;
     deleteCustomExpense: (id: string) => void;
+    // Income Logic
+    incomeEntries: IncomeEntry[];
+    addIncomeEntry: (entry: IncomeEntry) => void;
     // Ticket System
     tickets: SupportTicket[];
     addTicket: (ticket: Omit<SupportTicket, 'id' | 'ticketNumber' | 'createdAt' | 'status'>) => void;
@@ -103,6 +106,7 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
     const [cashboxTransactions, setCashboxTransactions] = useState<CashTransaction[]>([]);
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
     const [caseTypes, setCaseTypes] = useState<CaseType[]>(DEFAULT_CASE_TYPES);
+    const [incomeEntries, setIncomeEntries] = useState<IncomeEntry[]>([]);
 
     // Calculate total employee work hours per day (for burn calculation)
     const totalDailyStaffHours = employees.reduce((acc, emp) => acc + (emp.dailyHours || 8), 0);
@@ -174,6 +178,7 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                     const newDefaults = DEFAULT_CASE_TYPES.filter(d => !storedIds.has(d.id));
                     setCaseTypes([...parsed.caseTypes, ...newDefaults]);
                 }
+                if (parsed.incomeEntries) setIncomeEntries(parsed.incomeEntries);
             } catch (e) {
                 console.error("Failed to load local data", e);
             }
@@ -231,6 +236,11 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
             setCaseTypes([...data, ...newDefaults]);
         }, (err) => console.error("CaseTypes Stream Error:", err));
 
+        const unsubIncome = onSnapshot(query(collection(db, "income"), orderBy("date", "desc")), (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as IncomeEntry[];
+            setIncomeEntries(data);
+        }, (err) => console.error("Income Stream Error:", err));
+
         return () => {
             unsubEmployees();
             unsubTaskLogs();
@@ -239,14 +249,15 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
             unsubTransactions();
             unsubTickets();
             unsubCaseTypes();
+            unsubIncome();
         };
     }, []);
 
     // 3. Keep local storage in sync as a secondary cache
     useEffect(() => {
-        const data = { employees, taskLogs, financials, clients, cashboxTransactions, tickets, caseTypes };
+        const data = { employees, taskLogs, financials, clients, cashboxTransactions, tickets, caseTypes, incomeEntries };
         localStorage.setItem("law-firm-os-data", JSON.stringify(data));
-    }, [employees, taskLogs, financials, clients, cashboxTransactions, tickets, caseTypes]);
+    }, [employees, taskLogs, financials, clients, cashboxTransactions, tickets, caseTypes, incomeEntries]);
 
     const addDebugLog = (msg: string) => {
         const timestamp = new Date().toLocaleTimeString();
@@ -474,6 +485,14 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const addIncomeEntry = async (entry: IncomeEntry) => {
+        if (isConfigured) {
+            await setDoc(doc(db, "income", entry.id), entry);
+        } else {
+            setIncomeEntries(prev => [entry, ...prev]);
+        }
+    };
+
     return (
         <FirmContext.Provider
             value={{
@@ -500,6 +519,8 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                 updateCaseType,
                 deleteCaseType,
                 dailyBurnMetrics,
+                incomeEntries,
+                addIncomeEntry,
                 isCloudSyncActive: isConfigured,
                 firebaseProjectId: isConfigured ? (db as any)._databaseId.projectId : null,
                 refreshEmployees,
