@@ -49,6 +49,7 @@ interface FirmContextType {
     // Income Logic
     incomeEntries: IncomeEntry[];
     addIncomeEntry: (entry: IncomeEntry) => void;
+    deleteIncomeEntry: (id: string) => void;
     // Ticket System
     tickets: SupportTicket[];
     addTicket: (ticket: Omit<SupportTicket, 'id' | 'ticketNumber' | 'createdAt' | 'status'>) => void;
@@ -493,6 +494,15 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const deleteIncomeEntry = async (id: string) => {
+        if (isConfigured) {
+            await deleteDoc(doc(db, "income", id));
+            // Realtime listener will update state
+        } else {
+            setIncomeEntries(prev => prev.filter(e => e.id !== id));
+        }
+    };
+
     return (
         <FirmContext.Provider
             value={{
@@ -521,6 +531,7 @@ export function FirmProvider({ children }: { children: React.ReactNode }) {
                 dailyBurnMetrics,
                 incomeEntries,
                 addIncomeEntry,
+                deleteIncomeEntry,
                 isCloudSyncActive: isConfigured,
                 firebaseProjectId: isConfigured ? (db as any)._databaseId.projectId : null,
                 refreshEmployees,

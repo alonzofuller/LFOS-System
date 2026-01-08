@@ -28,6 +28,7 @@ export default function FinancePage() {
         dailyBurnMetrics,
         incomeEntries,
         addIncomeEntry,
+        deleteIncomeEntry,
         taskLogs
     } = useFirmData();
     const [editing, setEditing] = useState(false);
@@ -139,11 +140,53 @@ export default function FinancePage() {
             alert("Please enter expense name and amount.");
             return;
         }
-        addCustomExpense({
-            id: Math.random().toString(36).substr(2, 9),
-            name: newExpenseName,
-            amount: Number(newExpenseAmount)
-        });
+
+        const nameLower = newExpenseName.toLowerCase().trim();
+        const expenseAmount = Number(newExpenseAmount);
+
+        // Standard Expense Routing Map
+        const standardExpenses: Record<string, keyof typeof financials> = {
+            "lease": "monthlyLease",
+            "rent": "monthlyLease",
+            "office lease": "monthlyLease",
+            "payroll": "payroll",
+            "staff": "payroll",
+            "labor": "payroll",
+            "clio": "clio",
+            "case management": "clio",
+            "phone": "phone",
+            "phones": "phone",
+            "wifi": "wifi",
+            "internet": "wifi",
+            "frontier": "wifi",
+            "printer": "printer",
+            "printing": "printer",
+            "kirbo": "printer",
+            "postage": "postage",
+            "stamps": "postage",
+            "mail": "postage",
+            "efile": "efile",
+            "filing fees": "efile",
+            "supplies": "supplies",
+            "office supplies": "supplies",
+            "chargebacks": "chargebacks",
+            "lunch": "staffLunch",
+            "staff lunch": "staffLunch",
+            "meals": "staffLunch"
+        };
+
+        if (standardExpenses[nameLower]) {
+            const keys = standardExpenses[nameLower];
+            alert(`Smart Routing: Updating '${keys}' with $${expenseAmount} instead of creating duplicate.`);
+            updateFinancials({ [keys]: expenseAmount });
+        } else {
+            addCustomExpense({
+                id: Math.random().toString(36).substr(2, 9),
+                name: newExpenseName,
+                amount: expenseAmount
+            });
+        }
+
         setNewExpenseName("");
         setNewExpenseAmount("");
     };
@@ -317,12 +360,22 @@ export default function FinancePage() {
                             </div>
                             <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
                                 {weeklyIncome.map(inc => (
-                                    <div key={inc.id} className="text-xs flex justify-between p-2 rounded bg-slate-800/50 border border-slate-700/50">
+                                    <div key={inc.id} className="text-xs flex justify-between items-center p-2 rounded bg-slate-800/50 border border-slate-700/50 group">
                                         <div>
                                             <div className="font-medium text-slate-200">{inc.clientName}</div>
                                             <div className="text-slate-500">{inc.method} • {new Date(inc.date).toLocaleDateString()}</div>
                                         </div>
-                                        <div className="font-bold text-emerald-400">+${inc.amount}</div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="font-bold text-emerald-400">+${inc.amount}</div>
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm("Delete this income entry?")) deleteIncomeEntry(inc.id)
+                                                }}
+                                                className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
