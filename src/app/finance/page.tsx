@@ -371,7 +371,7 @@ export default function FinancePage() {
                                                 onClick={() => {
                                                     if (confirm("Delete this income entry?")) deleteIncomeEntry(inc.id)
                                                 }}
-                                                className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="text-slate-500 hover:text-red-500 transition-colors ml-2"
                                             >
                                                 <Trash2 className="w-3 h-3" />
                                             </button>
