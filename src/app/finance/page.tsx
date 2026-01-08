@@ -273,17 +273,17 @@ export default function FinancePage() {
                                     type="number"
                                     value={newIncome.amount}
                                     onChange={e => setNewIncome({ ...newIncome, amount: e.target.value })}
-                                    className="bg-slate-900 border-slate-700"
+                                    className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
                                 />
                                 <Input
                                     placeholder="Client Name"
                                     value={newIncome.clientName}
                                     onChange={e => setNewIncome({ ...newIncome, clientName: e.target.value })}
-                                    className="bg-slate-900 border-slate-700"
+                                    className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
                                 />
                                 <div className="grid grid-cols-2 gap-2">
                                     <select
-                                        className="h-9 rounded-md border border-slate-700 bg-slate-900 px-3 text-sm"
+                                        className="h-9 rounded-md border border-slate-700 bg-slate-900 px-3 text-sm text-white"
                                         value={newIncome.category}
                                         onChange={e => setNewIncome({ ...newIncome, category: e.target.value })}
                                     >
@@ -294,7 +294,7 @@ export default function FinancePage() {
                                         <option>Other</option>
                                     </select>
                                     <select
-                                        className="h-9 rounded-md border border-slate-700 bg-slate-900 px-3 text-sm"
+                                        className="h-9 rounded-md border border-slate-700 bg-slate-900 px-3 text-sm text-white"
                                         value={newIncome.method}
                                         onChange={e => setNewIncome({ ...newIncome, method: e.target.value })}
                                     >
@@ -309,7 +309,7 @@ export default function FinancePage() {
                                     placeholder="Description (Optional)"
                                     value={newIncome.description}
                                     onChange={e => setNewIncome({ ...newIncome, description: e.target.value })}
-                                    className="bg-slate-900 border-slate-700 text-xs"
+                                    className="bg-slate-900 border-slate-700 text-xs text-white placeholder:text-slate-500"
                                 />
                                 <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleAddIncome}>
                                     Add Income
