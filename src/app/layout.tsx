@@ -7,7 +7,10 @@ import { Sidebar } from "@/components/Sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Law Firm Operating System",
@@ -21,17 +24,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(inter.className, "antialiased bg-background text-foreground flex min-h-screen")}>
+      <body className={cn(inter.variable, "font-sans antialiased bg-background text-foreground flex min-h-screen")}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
           <FirmProvider>
             <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Header for Mode Toggle */}
               <header className="flex justify-end p-4 border-b pl-16 md:pl-4">
                 <ModeToggle />
               </header>
