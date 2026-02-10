@@ -32,7 +32,7 @@ export default function RootLayout({
             <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Header for Mode Toggle */}
-              <header className="flex justify-end p-4 border-b">
+              <header className="flex justify-end p-4 border-b pl-16 md:pl-4">
                 <ModeToggle />
               </header>
               <div className="flex-1 overflow-auto">

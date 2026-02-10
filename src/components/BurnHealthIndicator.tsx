@@ -37,7 +37,7 @@ export function BurnHealthIndicator() {
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <div className="text-[10px] text-muted-foreground uppercase font-bold">Total Daily Burn</div>
-                    <div className="text-xl font-mono font-bold text-white">${total_daily_burn.toFixed(2)}</div>
+                    <div className="text-xl font-mono font-bold text-foreground">${total_daily_burn.toFixed(2)}</div>
                 </div>
                 <div className="space-y-1">
                     <div className="text-[10px] text-muted-foreground uppercase font-bold">Hourly Burn Rate</div>
@@ -67,14 +67,14 @@ export function BurnHealthIndicator() {
             {overheadDuplicationRisk && (
                 <div className="bg-amber-500/10 border border-amber-500/30 p-2 rounded text-[10px] text-amber-200 flex gap-2">
                     <Info className="w-3 h-3 shrink-0" />
-                    <p>WARNING: Total daily burn exceeds 2.5x payroll. Check for duplicated fixed overhead or high non-labor costs.</p>
+                    <p className="text-amber-600 dark:text-amber-200">WARNING: Total daily burn exceeds 2.5x payroll. Check for duplicated fixed overhead or high non-labor costs.</p>
                 </div>
             )}
 
             {!hourly_burn_rate && total_daily_hours === 0 && (
                 <div className="bg-blue-500/10 border border-blue-500/30 p-2 rounded text-[10px] text-blue-200 flex gap-2">
                     <Info className="w-3 h-3 shrink-0" />
-                    <p>Total daily hours are 0. Hourly burn rate is currently null for pricing accuracy.</p>
+                    <p className="text-blue-600 dark:text-blue-200">Total daily hours are 0. Hourly burn rate is currently null for pricing accuracy.</p>
                 </div>
             )}
         </div>
