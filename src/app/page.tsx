@@ -11,7 +11,6 @@ import { useState, useEffect } from "react";
 import { SupportTicket } from "@/types";
 
 export default function Home() {
-  console.log("[v0] Home page rendering");
   const { employees, financials, clients, tickets, resolveTicket, dailyBurnMetrics } = useFirmData();
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState(new Date());
