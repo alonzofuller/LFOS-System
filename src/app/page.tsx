@@ -45,7 +45,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen p-8 md:p-12 bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900">
+    <main className="min-h-screen p-8 md:p-12 bg-background">
       {/* TICKET NOTIFICATION BAR */}
       {openTickets.length > 0 && (
         <div className="mb-6 p-4 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30">
@@ -90,8 +90,8 @@ export default function Home() {
 
       <header className="mb-12 flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Firm Command Center</h1>
-          <p className="text-white/70 mt-2">Survival Protocol: Active</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Firm Command Center</h1>
+          <p className="text-muted-foreground mt-2">Survival Protocol: Active</p>
         </div>
         <div className="text-right hidden md:block">
           <div className="text-3xl font-mono font-bold tracking-widest text-primary flex items-center justify-end gap-3">
@@ -243,7 +243,7 @@ export default function Home() {
               <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-amber-500/20 to-orange-500/10">
                 <div>
                   <div className="text-xs font-mono text-muted-foreground">Ticket #{selectedTicket?.ticketNumber}</div>
-                  <h2 className="text-xl font-bold text-white">{selectedTicket?.subject}</h2>
+                  <h2 className="text-xl font-bold text-foreground">{selectedTicket?.subject}</h2>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => { setSelectedTicket(null); setResolution(""); }}>
                   <X className="w-5 h-5" />
